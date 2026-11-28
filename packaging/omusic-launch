@@ -1,0 +1,8 @@
+#!/bin/sh
+if command -v omarchy >/dev/null 2>&1; then
+    exec omarchy launch or focus tui --app-id=org.omarchy.omusic omusic "$@"
+fi
+if command -v xdg-terminal-exec >/dev/null 2>&1; then
+    exec xdg-terminal-exec --app-id=org.omarchy.omusic -e omusic "$@"
+fi
+exec "${TERMINAL:-xterm}" -e omusic "$@"

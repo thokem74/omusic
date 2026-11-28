@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Omusic
+Comment=Browse and play your local MP3 albums
+Exec=omusic-launch
+TryExec=omusic
+Icon=audio-x-generic
+Terminal=false
+Categories=AudioVideo;Audio;Player;
+Keywords=Music;MP3;Album;
+StartupWMClass=org.omarchy.omusic

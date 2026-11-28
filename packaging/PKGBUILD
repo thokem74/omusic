@@ -1,0 +1,28 @@
+pkgname=omusic
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Album-first terminal MP3 player for Omarchy and Linux'
+arch=('x86_64' 'aarch64')
+url='https://github.com/thokem74/omusic'
+license=('MIT')
+depends=('mpv' 'glibc' 'gcc-libs')
+optdepends=('xdg-terminal-exec: launch in the preferred terminal outside Omarchy'
+            'xterm: fallback desktop terminal')
+makedepends=('rustup')
+source=("omusic-${pkgver}.tar.gz")
+# The archive is generated locally by scripts/package.sh, not downloaded.
+sha256sums=('SKIP')
+
+build() {
+    cd "omusic-${pkgver}"
+    cargo build --release --locked
+}
+
+package() {
+    cd "omusic-${pkgver}"
+    install -Dm755 target/release/omusic "$pkgdir/usr/bin/omusic"
+    install -Dm755 packaging/omusic-launch "$pkgdir/usr/bin/omusic-launch"
+    install -Dm644 packaging/org.omarchy.omusic.desktop "$pkgdir/usr/share/applications/org.omarchy.omusic.desktop"
+    install -Dm644 README.md "$pkgdir/usr/share/doc/omusic/README.md"
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/omusic/LICENSE"
+}

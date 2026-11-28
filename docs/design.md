@@ -1,6 +1,6 @@
 # Omusic design
 
-Status: agreed. The user confirmed shared understanding after the final interview round. This document defines the first-version scope; implementation and installation have not yet been performed.
+Status: agreed. The user confirmed shared understanding after the final interview round. This document defines the first-version scope; implementation and verification are tracked in [issue #1](https://github.com/thokem74/omusic/issues/1).
 
 ## Confirmed decisions
 
@@ -82,7 +82,7 @@ The user confirmed all album-credit refinements. Opening an album from Appears o
 
 The user selected **A — Library**, the three-column artists → albums → tracks layout with a bottom playback strip. This settles the layout comparison; the remaining agreed behavior above still applies. The user did not provide an additional rationale or request a combination with other variants.
 
-The throwaway browser simulation in [prototype-ux/README.md](../prototype-ux/README.md) is the visual reference. Implement the selected UX in Rust rather than promoting the browser prototype code. Archiving the prototype on a throwaway branch remains pending before implementation.
+The throwaway browser simulation is preserved on the local `prototype/ux-library` branch at commit `94dac23ae233eae69434b72e2b4a110db29f3b8a`. Its `prototype-ux/README.md` explains the comparison, and variant A is the visual reference. The production implementation is a Rust TUI; the browser prototypes are removed from the implementation branch.
 
 The [interview answer audit](interview-audit.md) reconciles all 35 questions with the user's answers. No previously asked design question remains unanswered.
 
