@@ -18,6 +18,7 @@ pub struct Session {
     database: rusqlite::Connection,
     collection: Collection,
     scan: Option<Receiver<collection::Scan>>,
+    pending_scan: bool,
     state: State,
     failed: std::collections::BTreeSet<usize>,
     visited: std::collections::BTreeSet<usize>,
@@ -59,6 +60,7 @@ impl Session {
             database,
             collection,
             scan: None,
+            pending_scan: false,
             state,
             failed: Default::default(),
             visited: Default::default(),
@@ -82,11 +84,13 @@ impl Session {
         self.scan.is_some()
     }
     pub fn rescan(&mut self, roots: Vec<PathBuf>) -> anyhow::Result<()> {
-        if self.is_scanning() {
-            return Ok(());
-        }
         self.state.roots = roots.clone();
         self.save()?;
+        if self.is_scanning() {
+            self.pending_scan = true;
+            return Ok(());
+        }
+        self.pending_scan = false;
         let (tx, rx) = mpsc::channel();
         std::thread::spawn(move || {
             let _ = tx.send(collection::discover(roots));
@@ -116,10 +120,17 @@ impl Session {
         }
         self.collection.rebuild();
         self.state.errors.extend(scan.errors);
+        if self.state.errors.len() > 200 {
+            self.state.errors.drain(..self.state.errors.len() - 200);
+        }
         self.database.execute(
             "INSERT OR REPLACE INTO snapshots VALUES ('collection',?1)",
             [serde_json::to_string(&self.collection)?],
         )?;
+        self.save()?;
+        if self.pending_scan {
+            self.rescan(self.state.roots.clone())?;
+        }
         Ok(true)
     }
 }

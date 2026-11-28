@@ -9,6 +9,7 @@ depends=('mpv' 'glibc' 'gcc-libs')
 optdepends=('xdg-terminal-exec: launch in the preferred terminal outside Omarchy'
             'xterm: fallback desktop terminal')
 makedepends=('rustup')
+options=('!lto')
 source=("omusic-${pkgver}.tar.gz")
 # The archive is generated locally by scripts/package.sh, not downloaded.
 sha256sums=('SKIP')

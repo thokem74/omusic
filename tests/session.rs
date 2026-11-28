@@ -394,3 +394,69 @@ fn metadata_fallbacks_contributors_and_overlapping_roots_preserve_source_files()
             .any(|t| t.title == "Filename" && t.album == "Untagged")
     );
 }
+
+#[test]
+fn adding_a_root_while_scanning_schedules_the_latest_collection_request() {
+    let scratch = tempfile::tempdir().unwrap();
+    let a = scratch.path().join("A");
+    let b = scratch.path().join("B");
+    mp3(
+        &a.join("Album/1.mp3"),
+        "First",
+        "Aster",
+        Some("Aster"),
+        1,
+        1,
+    );
+    mp3(&b.join("Album/1.mp3"), "Last", "Mira", Some("Mira"), 1, 1);
+    let mut session = Session::open(&scratch.path().join("db")).unwrap();
+    session.rescan(vec![a.clone()]).unwrap();
+    session.rescan(vec![a, b.clone()]).unwrap();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while session.is_scanning() {
+        session.poll().unwrap();
+        assert!(std::time::Instant::now() < deadline);
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    assert_eq!(session.collection().tracks.len(), 2);
+    assert!(session.state().roots.contains(&b));
+}
+
+#[test]
+fn reordering_a_shuffled_queue_does_not_repeat_already_visited_entries() {
+    let scratch = tempfile::tempdir().unwrap();
+    let root = scratch.path().join("music");
+    for number in 1..=3 {
+        mp3(
+            &root.join(format!("Album/{number}.mp3")),
+            &number.to_string(),
+            "Aster",
+            Some("Aster"),
+            1,
+            number,
+        );
+    }
+    let mut session = Session::open(&scratch.path().join("db")).unwrap();
+    session.seed_shuffle(7);
+    scan(&mut session, &root);
+    session
+        .dispatch(SessionCommand::PlayAlbum {
+            id: session.collection().albums[0].id.clone(),
+            start: 0,
+        })
+        .unwrap();
+    session.dispatch(SessionCommand::Shuffle(true)).unwrap();
+    let first = session.state().current_track().unwrap().id.clone();
+    session.event(Event::Ended { id: first.clone() }).unwrap();
+    session
+        .dispatch(SessionCommand::Move { from: 0, to: 2 })
+        .unwrap();
+    let mut visited = std::collections::BTreeSet::from([first]);
+    for _ in 0..2 {
+        let id = session.state().current_track().unwrap().id.clone();
+        assert!(visited.insert(id.clone()));
+        session.event(Event::Ended { id }).unwrap();
+    }
+    assert!(!session.state().playing);
+    assert_eq!(visited.len(), 3);
+}

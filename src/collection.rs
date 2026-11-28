@@ -70,6 +70,13 @@ impl Collection {
             })
             .collect()
     }
+    pub fn albums_for_artist(&self, artist: &str) -> Vec<&Album> {
+        self.albums
+            .iter()
+            .filter(|a| a.artist == artist)
+            .chain(self.appears_on(artist))
+            .collect()
+    }
     pub(crate) fn rebuild(&mut self) {
         let mut groups: BTreeMap<String, Vec<&Track>> = BTreeMap::new();
         for track in &self.tracks {

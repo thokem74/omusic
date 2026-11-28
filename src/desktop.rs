@@ -21,6 +21,13 @@ fn status(state: &State) -> &'static str {
     }
 }
 pub const NAME: &str = "org.mpris.MediaPlayer2.omusic";
+fn repeat_status(repeat: Repeat) -> &'static str {
+    match repeat {
+        Repeat::Off => "None",
+        Repeat::Track => "Track",
+        Repeat::Queue => "Playlist",
+    }
+}
 
 #[derive(Clone)]
 struct Player {
@@ -165,11 +172,7 @@ impl Controls {
     }
     #[zbus(property)]
     fn loop_status(&self) -> &str {
-        match self.0.state().repeat {
-            Repeat::Off => "None",
-            Repeat::Track => "Track",
-            Repeat::Queue => "Playlist",
-        }
+        repeat_status(self.0.state().repeat)
     }
     #[zbus(property)]
     fn set_loop_status(&self, value: &str) {
@@ -244,14 +247,7 @@ impl Desktop {
         changed.insert("Metadata", Value::from(metadata(state)));
         changed.insert("Volume", Value::from(state.volume / 100.0));
         changed.insert("Shuffle", Value::from(state.shuffle));
-        changed.insert(
-            "LoopStatus",
-            Value::from(match state.repeat {
-                Repeat::Off => "None",
-                Repeat::Track => "Track",
-                Repeat::Queue => "Playlist",
-            }),
-        );
+        changed.insert("LoopStatus", Value::from(repeat_status(state.repeat)));
         self.connection.emit_signal(
             None::<&str>,
             PATH,

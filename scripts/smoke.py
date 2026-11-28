@@ -32,6 +32,12 @@ def run(binary):
             )
         env = dict(os.environ, TERM="xterm-256color", XDG_STATE_HOME=str(root / "state"),
                    XDG_CONFIG_HOME=str(root / "config"), XDG_RUNTIME_DIR=str(runtime))
+        stale_events = os.environ.get("OMUSIC_TEST_STALE_EVENTS") == "1"
+        if stale_events:
+            helpers = root / "helpers"
+            helpers.mkdir()
+            (helpers / "mpv").symlink_to(Path("tests/support/fake_mpv.py").resolve())
+            env["PATH"] = str(helpers) + os.pathsep + env["PATH"]
         master, slave = pty.openpty()
         slave_path = os.ttyname(slave)
         fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 30, 120, 0, 0))
@@ -81,6 +87,16 @@ def run(binary):
             os.write(master, b"\r\r\r")
             wait(lambda: "Playing" in property_value("PlaybackStatus"), "keyboard playback")
             wait(lambda: "First" in property_value("Metadata"), "desktop track metadata")
+            if stale_events:
+                call("Next")
+                wait(lambda: "Last" in property_value("Metadata"), "replacement track selected")
+                time.sleep(0.4)
+                assert "Playing" in property_value("PlaybackStatus"), "Old EOF must not stop the replacement track"
+                os.write(master, b"q")
+                process.wait(timeout=5)
+                assert process.returncode == 0
+                print("PASS: delayed EOF is not attributed to the replacement track")
+                return
             call("Pause")
             wait(lambda: "Paused" in property_value("PlaybackStatus"), "MPRIS pause")
             call("Next")

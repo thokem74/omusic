@@ -22,6 +22,10 @@ pub struct Mpv {
     paused: bool,
     position: f64,
     duration: f64,
+    generation: u64,
+    acknowledged: u64,
+    entry_generation: u64,
+    entry_id: Option<i64>,
 }
 
 impl Mpv {
@@ -97,6 +101,10 @@ impl Mpv {
             paused: false,
             position: 0.0,
             duration: 0.0,
+            generation: 0,
+            acknowledged: 0,
+            entry_generation: 0,
+            entry_id: None,
         };
         for (id, name) in [(1, "time-pos"), (2, "duration")] {
             player.send(json!(["observe_property", id, name]))?;
@@ -105,7 +113,13 @@ impl Mpv {
     }
 
     fn send(&mut self, command: Value) -> Result<()> {
-        serde_json::to_writer(&mut self.socket, &json!({"command":command}))?;
+        self.send_request(command, 0)
+    }
+    fn send_request(&mut self, command: Value, request: u64) -> Result<()> {
+        serde_json::to_writer(
+            &mut self.socket,
+            &json!({"command":command,"request_id":request}),
+        )?;
         self.socket.write_all(b"\n")?;
         Ok(())
     }
@@ -114,13 +128,14 @@ impl Mpv {
         match effect {
             Effect::Raise => {}
             Effect::Load { track, position } => {
+                self.generation += 1;
                 self.track = Some(track.id);
                 self.waiting = true;
                 self.start = position;
                 self.paused = !playing;
                 self.position = position;
                 self.duration = track.duration;
-                self.send(json!(["loadfile", track.path, "replace"]))?;
+                self.send_request(json!(["loadfile",track.path,"replace",-1,{"pause":if playing{"no"}else{"yes"},"start":position.to_string()}]),self.generation)?;
             }
             Effect::Pause(paused) => {
                 self.paused = paused;
@@ -136,6 +151,7 @@ impl Mpv {
             }
             Effect::Volume(volume) => self.send(json!(["set_property", "volume", volume]))?,
             Effect::Stop => {
+                self.generation += 1;
                 self.track = None;
                 self.waiting = false;
                 self.send(json!(["stop"]))?;
@@ -148,15 +164,35 @@ impl Mpv {
         anyhow::ensure!(self.child.try_wait()?.is_none(), "mpv exited unexpectedly");
         let mut events = vec![];
         while let Ok(message) = self.events.try_recv() {
+            if let Some(request) = message["request_id"].as_u64().filter(|id| *id > 0) {
+                if message["error"].as_str() == Some("success") {
+                    self.acknowledged = request;
+                } else if request == self.generation
+                    && let Some(id) = self.track.take()
+                {
+                    events.push(Event::Failed {
+                        id,
+                        message: format!("mpv load: {}", message["error"]),
+                    });
+                }
+            }
             match message["event"].as_str().unwrap_or_default() {
-                "file-loaded" => {
+                "start-file" => {
+                    self.entry_generation = self.acknowledged;
+                    self.entry_id = message["playlist_entry_id"].as_i64();
+                }
+                "file-loaded" if self.entry_generation == self.generation => {
                     self.waiting = false;
                     self.send(json!(["set_property", "pause", self.paused]))?;
                     if self.start > 0.0 {
                         self.send(json!(["seek", self.start, "absolute+exact"]))?;
                     }
                 }
-                "property-change" if !self.waiting && self.track.is_some() => {
+                "property-change"
+                    if !self.waiting
+                        && self.track.is_some()
+                        && self.entry_generation == self.generation =>
+                {
                     if let Some(value) = message["data"].as_f64() {
                         match message["name"].as_str() {
                             Some("time-pos") => self.position = value,
@@ -165,7 +201,10 @@ impl Mpv {
                         }
                     }
                 }
-                "end-file" => {
+                "end-file"
+                    if self.entry_generation == self.generation
+                        && message["playlist_entry_id"].as_i64() == self.entry_id =>
+                {
                     if let Some(id) = self.track.clone() {
                         match message["reason"].as_str() {
                             Some("eof") => {

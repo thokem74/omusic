@@ -18,6 +18,7 @@ pub struct Ui {
     result_index: usize,
     help: bool,
     errors: bool,
+    error_scroll: u16,
     folder: Option<String>,
 }
 
@@ -31,24 +32,12 @@ impl Ui {
             result_index: 0,
             help: false,
             errors: false,
+            error_scroll: 0,
             folder: None,
         }
     }
     fn albums<'a>(&self, session: &'a Session) -> Vec<&'a Album> {
-        session
-            .collection()
-            .albums
-            .iter()
-            .filter(|a| {
-                a.artist == self.browse.artist
-                    || a.tracks.iter().any(|id| {
-                        session
-                            .collection()
-                            .track(id)
-                            .is_some_and(|t| t.contributors.contains(&self.browse.artist))
-                    })
-            })
-            .collect()
+        session.collection().albums_for_artist(&self.browse.artist)
     }
     pub fn sync(&mut self, session: &Session) {
         let artists = session.collection().artists();
@@ -156,7 +145,20 @@ impl Ui {
                 }
                 _ => {}
             }
-        } else if self.help || self.errors {
+        } else if self.errors {
+            match key.code {
+                KeyCode::Char('j') | KeyCode::Down => {
+                    self.error_scroll = self.error_scroll.saturating_add(1)
+                }
+                KeyCode::Char('k') | KeyCode::Up => {
+                    self.error_scroll = self.error_scroll.saturating_sub(1)
+                }
+                _ => {
+                    self.errors = false;
+                    self.error_scroll = 0;
+                }
+            }
+        } else if self.help {
             self.help = false;
             self.errors = false;
         } else {
@@ -417,15 +419,20 @@ impl Ui {
             );
         }
         if self.errors {
-            popup(
-                frame,
-                " Errors · any key to close ",
-                &if state.errors.is_empty() {
-                    "No errors recorded.".into()
-                } else {
-                    state.errors.join("\n")
-                },
-                theme,
+            let area = center(frame.area(), 85, 85);
+            frame.render_widget(Clear, area);
+            let text = if state.errors.is_empty() {
+                "No errors recorded.".into()
+            } else {
+                state.errors.join("\n")
+            };
+            frame.render_widget(
+                Paragraph::new(text)
+                    .wrap(Wrap { trim: false })
+                    .scroll((self.error_scroll, 0))
+                    .style(Style::default().fg(theme.foreground).bg(theme.background))
+                    .block(Block::bordered().title(" Errors · j/k scroll · Esc close ")),
+                area,
             );
         }
         if let Some(folder) = &self.folder {
