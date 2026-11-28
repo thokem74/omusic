@@ -6,7 +6,7 @@
 - Before exploring the project, read the [domain glossary](GLOSSARY.md) and use its canonical terms.
 - Before architecture changes, read the relevant [architecture decisions](docs/adr/).
 - Before writing or reviewing Rust code, changing Rust tooling, or adding CI checks, read the [development policy](docs/development.md) and follow it.
-- When implementing the interface, use [prototype A — Library](prototype-ux/README.md) as the selected UX reference.
+- When implementing the interface, follow [A — Library and its archived prototype reference](docs/design.md#ux-prototype-comparison).
 - When checking whether a design question was already answered, consult the [interview answer audit](docs/interview-audit.md).
 
 ## Agent skills

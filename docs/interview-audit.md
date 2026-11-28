@@ -35,6 +35,6 @@ The album-credit Q4–Q6 answers were not inferred from the earlier tooling answ
 
 - The actual music collection path has not been supplied. Configurable roots and generated MP3 fixtures allow implementation to proceed; real-collection verification remains pending.
 - The exact stable Rust release will be selected and pinned at implementation time under the agreed policy.
-- Code, toolchain configuration, CI, packaging, and runtime verification have not been performed. Agreement on behavior does not establish that it works yet.
+- At the time of the interview audit, code, toolchain configuration, CI, packaging, and runtime verification had not been performed. Subsequent implementation verification is recorded in [verification.md](verification.md); interview agreement alone is not evidence of working software.
 
 No additional user approval question is introduced by this audit. Revisit consequential new trade-offs if they arise during implementation.
