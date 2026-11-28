@@ -1,0 +1,44 @@
+<!doctype html>
+<!-- Throwaway: five terminal UX variants on one route, selected with ?variant=A..E.
+     Question: which navigation model makes browsing albums and managing playback feel natural? -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Omusic · five ways to listen</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="prototype.js"></script>
+</head>
+<body>
+  <header class="page-head">
+    <a class="wordmark" href="?variant=A">o<span>music</span><sup>UX LAB</sup></a>
+    <span class="prototype-note">THROWAWAY PROTOTYPE · SAMPLE COLLECTION · NO AUDIO</span>
+    <button class="theme-button" id="theme">Light / dark</button>
+  </header>
+  <main>
+    <section class="intro">
+      <div><div class="eyebrow">ONE COLLECTION. FIVE WAYS IN.</div><h1 id="variant-title"></h1></div>
+      <p id="variant-description"></p>
+    </section>
+    <section class="terminal" aria-label="Interactive terminal UX simulation">
+      <div class="terminal-chrome"><span class="window-mark">◆</span><span>omusic — UX prototype</span><span id="dimensions">120 × 34</span></div>
+      <div class="tui-top"><b>omusic<span class="accent">.</span></b><span id="section-label"></span><span class="collection-count"></span></div>
+      <div id="screen" tabindex="0" aria-label="Music browser"></div>
+      <div id="player"></div>
+      <div id="keybar"></div>
+      <div id="notice" role="status" aria-live="polite">Sample data loaded. Nothing touches your music files.</div>
+    </section>
+    <section class="below">
+      <div class="try"><span class="eyebrow">TRY THIS</span><p id="try-this"></p></div>
+      <details class="state"><summary>Inspect live prototype state <span>↗</span></summary><pre id="state"></pre></details>
+    </section>
+  </main>
+  <nav class="switcher" aria-label="Choose UX variant">
+    <button id="previous-variant" aria-label="Previous variant">←</button>
+    <div id="variant-buttons"></div>
+    <button id="next-variant" aria-label="Next variant">→</button>
+    <span class="switch-hint">← → compare</span>
+  </nav>
+  <dialog id="help"><h2>Try the controls</h2><p>Click rows to browse. Double-click a track to play its album from that track.</p><dl><dt>← / →</dt><dd>Compare UX variants</dd><dt>Tab / Shift Tab</dt><dd>Move between controls</dd><dt>j / k or ↑ / ↓</dt><dd>Move through the focused list</dd><dt>Enter</dt><dd>Open selection; play selected track</dd><dt>Space</dt><dd>Play / pause</dd><dt>/</dt><dd>Search the whole collection</dd><dt>a</dt><dd>Add selected album to queue</dd><dt>Backspace</dt><dd>Go back in the single-pane browser</dd><dt>?</dt><dd>Open help</dd></dl><p>Text fields keep normal typing behavior. Playback, seeking, shuffle and volume are simulated in memory. Reload resets the session.</p><button id="close-help">Back to music · Esc</button></dialog>
+</body>
+</html>
